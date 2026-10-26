@@ -216,6 +216,20 @@
     });
   }
 
+  // ---------- mode toggle (conversation <-> explain) ----------
+  function wireModeButton() {
+    if (!els.modeBtn) return;
+    els.modeBtn.addEventListener("click", () => {
+      const next = state.mode === "conversation" ? "explain" : "conversation";
+      sendJSON({ type: "set_mode", mode: next });
+      addSysMsg(
+        next === "explain"
+          ? "Mode → explain (grammar teacher, replies in Russian)"
+          : "Mode → conversation (English partner)"
+      );
+    });
+  }
+
   // ---------- boot ----------
   document.addEventListener("DOMContentLoaded", async () => {
     cacheEls();
@@ -233,6 +247,7 @@
     wireTextInput();
     wireMic();
     wireKeys();
+    wireModeButton();
     connect();
     addSysMsg("Hold Space to talk, or type below to test without a mic.");
   });

@@ -1,0 +1,87 @@
+# Learning program for the trainer.
+# Ordered levels -> topics -> a grammar rule with short examples.
+# Mounted read-only into the container; edit on the host, no rebuild needed.
+# The orchestrator injects the "current focus" item into the LLM context and
+# advances through the list as the student practises (see app/progress.py).
+
+levels:
+  - level: A2
+    topics:
+      - id: a2-present-simple
+        topic: Present Simple
+        rule: "Habits and facts. Add -s/-es in the 3rd person singular (he/she/it)."
+        examples:
+          - "She works at a bank."
+          - "I don't drink coffee in the evening."
+      - id: a2-present-continuous
+        topic: Present Continuous
+        rule: "Actions happening now: be + verb-ing. Not used with state verbs (know, like)."
+        examples:
+          - "I'm cooking dinner right now."
+          - "They are not listening to me."
+      - id: a2-past-simple
+        topic: Past Simple
+        rule: "Finished past actions. Regular verbs add -ed; many verbs are irregular (go->went)."
+        examples:
+          - "We watched a movie last night."
+          - "He went to London in 2019."
+      - id: a2-articles
+        topic: Articles (a/an/the)
+        rule: "a/an for one non-specific thing; the for something specific or already known."
+        examples:
+          - "I bought a phone. The phone is great."
+          - "She is an engineer."
+
+  - level: B1
+    topics:
+      - id: b1-present-perfect
+        topic: Present Perfect
+        rule: "have/has + past participle for past with present relevance; use with for/since/just/already/yet."
+        examples:
+          - "I have lived here for five years."
+          - "Have you finished yet?"
+      - id: b1-past-vs-present-perfect
+        topic: Past Simple vs Present Perfect
+        rule: "Past simple for a finished time (yesterday, in 2010); present perfect for unspecified/ongoing time."
+        examples:
+          - "I saw him yesterday. (past simple)"
+          - "I have seen that film three times. (present perfect)"
+      - id: b1-conditionals-1
+        topic: First Conditional
+        rule: "Real future possibility: if + present simple, ... will + base verb."
+        examples:
+          - "If it rains, we will stay home."
+          - "She'll call you if she has time."
+      - id: b1-comparatives
+        topic: Comparatives & Superlatives
+        rule: "Short adj + -er/-est; long adj use more/most. Irregular: good->better->best."
+        examples:
+          - "This car is faster than mine."
+          - "It was the most interesting book of the year."
+
+  - level: B2
+    topics:
+      - id: b2-second-conditional
+        topic: Second Conditional
+        rule: "Unreal/hypothetical present: if + past simple, ... would + base verb."
+        examples:
+          - "If I had more time, I would learn the guitar."
+          - "What would you do if you won the lottery?"
+      - id: b2-passive
+        topic: Passive Voice
+        rule: "be + past participle when the action matters more than who does it."
+        examples:
+          - "The bridge was built in 1930."
+          - "This software is used by millions."
+      - id: b2-reported-speech
+        topic: Reported Speech
+        rule: "Shift tenses back when reporting: 'I am tired' -> He said he was tired."
+        examples:
+          - "She said she would come later."
+          - "He told me he had already eaten."
+      - id: b2-phrasal-verbs
+        topic: Common Phrasal Verbs
+        rule: "Verb + particle with idiomatic meaning: give up, run into, look forward to."
+        examples:
+          - "Don't give up now."
+          - "I ran into an old friend yesterday."

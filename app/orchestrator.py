@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Awaitable, Callable, List, Optional
 
 from . import prompts
@@ -26,6 +27,9 @@ logger = logging.getLogger("vet.orchestrator")
 
 SendJson = Callable[[dict], Awaitable[None]]
 SendBytes = Callable[[bytes], Awaitable[None]]
+
+# Advance to the next syllabus item once a session had at least this many turns.
+ADVANCE_AFTER_TURNS = 6
 
 
 class Session:
@@ -47,18 +51,44 @@ class Session:
         self.mode = settings.default_mode
         self.history: List[dict] = []
         self._session_id: Optional[int] = None
+        self._last_summary: Optional[str] = None
+        self._focus_item = None       # SyllabusItem | None
+        self._focus_index: int = 0
+        self._turn_count: int = 0
 
-    # ---- lifecycle (progress hooks; no-ops until stage 4 wires a store) ----
+    # ---- lifecycle: load prior progress at start, persist + advance at end ----
     async def on_start(self) -> None:
         if self.progress is None:
             return
         self._session_id = await asyncio.to_thread(self.progress.start_session, self.mode)
+        self._last_summary = await asyncio.to_thread(self.progress.get_last_summary)
+        if self.syllabus is not None and len(self.syllabus):
+            self._focus_index = await asyncio.to_thread(self.progress.current_item_index)
+            self._focus_item = self.syllabus.get(self._focus_index)
+        logger.info(
+            "session start id=%s mode=%s focus=%s",
+            self._session_id, self.mode, getattr(self._focus_item, "id", None)
+        )
 
     async def on_end(self) -> None:
         if self.progress is None or self._session_id is None:
             return
-        summary = await self._make_summary()
-        await asyncio.to_thread(self.progress.end_session, self._session_id, summary)
+        try:
+            summary = await self._make_summary()
+        except Exception:
+            logger.exception("summary generation failed")
+            summary = ""
+        try:
+            await asyncio.to_thread(self.progress.end_session, self._session_id, summary)
+            if self.syllabus is not None and len(self.syllabus) and self._focus_item is not None:
+                await asyncio.to_thread(self.progress.mark_topic, self._focus_item.id, "in_progress")
+                if self._turn_count >= ADVANCE_AFTER_TURNS:
+                    await asyncio.to_thread(self.progress.mark_topic, self._focus_item.id, "done")
+                    nxt = min(self._focus_index + 1, len(self.syllabus) - 1)
+                    await asyncio.to_thread(self.progress.set_current_item_index, nxt)
+                    logger.info("advanced syllabus to index %d", nxt)
+        except Exception:
+            logger.exception("on_end persistence failed")
 
     # ---- mode ----
     @property
@@ -158,17 +188,58 @@ class Session:
         return messages
 
     def _extra_context(self) -> Optional[str]:
-        # Stage 4 injects progress + current syllabus focus here.
-        return None
+        parts: List[str] = []
+        if self._focus_item is not None:
+            parts.append(f"[Learning focus] {self._focus_item.focus_line()}")
+        if self._last_summary:
+            parts.append(f"[Student progress so far] {self._last_summary}")
+        if self._focus_item is not None:
+            if self.mode == "conversation":
+                parts.append(
+                    "Gently steer the chat toward the focus topic and briefly correct related mistakes."
+                )
+            else:
+                parts.append(
+                    "If my question is open-ended, you may use the focus topic as your example."
+                )
+        return "\n".join(parts) if parts else None
 
     def _trim_history(self) -> None:
         if len(self.history) > self.s.history_max_messages:
             self.history = self.history[-self.s.history_max_messages:]
 
     async def _record_turn(self, user_text: str, assistant_text: str) -> None:
-        # Stage 4 persists turns / errors here.
-        return
+        self._turn_count += 1
+        if self.progress is not None and self._session_id is not None:
+            try:
+                await asyncio.to_thread(
+                    self.progress.record_turn, self._session_id, user_text, assistant_text
+                )
+            except Exception:
+                logger.exception("record_turn failed")
 
     async def _make_summary(self) -> str:
-        # Stage 4 asks the LLM for a short progress summary.
-        return ""
+        if self.progress is None or self._session_id is None:
+            return ""
+        turns = await asyncio.to_thread(self.progress.get_session_turns, self._session_id)
+        if not turns:
+            return ""
+        convo = "\n".join(f"Student: {u}\nTrainer: {a}" for u, a in turns[-8:])
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You analyse an English learner's practice session. Reply with ONE short "
+                    "English sentence (max 25 words) naming the student's recurring mistakes and "
+                    "an approximate CEFR level. No preamble, no lists."
+                ),
+            },
+            {"role": "user", "content": convo + "\n\n/no_think"},
+        ]
+        try:
+            note = await self.llm.complete(messages)
+        except Exception:
+            logger.exception("summary LLM call failed")
+            return ""
+        note = re.sub(r"<think>.*?</think>", "", note, flags=re.S)
+        return note.strip()[:300]

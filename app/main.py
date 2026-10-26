@@ -24,6 +24,8 @@ from .orchestrator import Session
 from .pipeline.llm import OllamaClient
 from .pipeline.stt import STT
 from .pipeline.tts import get_tts_backend
+from .progress import ProgressStore
+from .syllabus import Syllabus
 
 settings = get_settings()
 logging.basicConfig(
@@ -41,6 +43,8 @@ async def lifespan(app: FastAPI):
     app.state.stt = STT(settings)
     app.state.llm = OllamaClient(settings)
     app.state.tts = get_tts_backend(settings)
+    app.state.progress = ProgressStore(settings.db_path)
+    app.state.syllabus = Syllabus.load(settings.syllabus_path)
 
     # Warm up STT + TTS in the background so the first utterance isn't slow.
     # Failures here are non-fatal (e.g. offline on first run); they surface per turn.
@@ -62,6 +66,7 @@ async def lifespan(app: FastAPI):
     finally:
         warmup_task.cancel()
         await app.state.llm.aclose()
+        app.state.progress.close()
         logger.info("Shutdown complete")
 
 
@@ -103,6 +108,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         stt=websocket.app.state.stt,
         llm=websocket.app.state.llm,
         tts=websocket.app.state.tts,
+        progress=websocket.app.state.progress,
+        syllabus=websocket.app.state.syllabus,
     )
     await session.on_start()
 
