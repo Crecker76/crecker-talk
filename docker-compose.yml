@@ -1,0 +1,27 @@
+# One service: the CPU-only app container.
+# Ollama is NOT here — it runs natively on the Windows host (it grabs the GPU
+# by itself) and the container reaches it at http://host.docker.internal:11434.
+services:
+  app:
+    build: .
+    image: voice-english-trainer:latest
+    container_name: voice-english-trainer
+    ports:
+      - "8000:8000"
+    # Copy .env.dev.example or .env.prod.example to .env before `up`.
+    # required:false => if .env is missing, the defaults in app/config.py apply.
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Model weights persist between runs (downloaded on first use).
+      - ./models:/app/models
+      # SQLite progress DB.
+      - ./data:/app/data
+      # Learning program (editable on the host without rebuilding).
+      - ./syllabus.yaml:/app/syllabus.yaml:ro
+    # Lets the container resolve the host (where native Ollama listens).
+    # Works out of the box on Docker Desktop (Windows); host-gateway covers Linux.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

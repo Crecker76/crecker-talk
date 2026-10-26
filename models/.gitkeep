@@ -1,0 +1,3 @@
+# Model weights are downloaded here on first run and are NOT committed.
+#   models/whisper/ -> faster-whisper models
+#   models/piper/   -> Piper .onnx voices

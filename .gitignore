@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Env (keep only the examples)
+.env
+.env.*
+!.env.dev.example
+!.env.prod.example
+
+# Model weights (downloaded on first run, never committed)
+models/*
+!models/.gitkeep
+
+# SQLite / runtime data (mounted volume)
+data/*
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# Node / frontend build
+node_modules/
+dist/
+.vite/
+
+# Misc
+*.log
+.DS_Store
+.idea/
+.vscode/
