@@ -1,9 +1,8 @@
-"""FastAPI entrypoint: serves the frontend and the WebSocket pipeline.
+"""FastAPI entrypoint: serves the frontend and runs the voice pipeline.
 
-Stage 1 is a text echo loop that exercises the full skeleton (static files +
-WebSocket + character states) without any audio. Later stages replace the echo
-in ``handle_text_message`` / the binary branch with the real VAD->STT->LLM->TTS
-pipeline (see app.orchestrator).
+Heavy components (STT model, Ollama client, TTS backend) are created once at
+startup and shared across WebSocket sessions. Each browser connection gets its
+own :class:`app.orchestrator.Session` (conversation history, mode).
 """
 
 from __future__ import annotations
@@ -11,14 +10,20 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from . import prompts
 from . import ws_protocol as wp
 from .config import get_settings
+from .orchestrator import Session
+from .pipeline.llm import OllamaClient
+from .pipeline.stt import STT
+from .pipeline.tts import get_tts_backend
 
 settings = get_settings()
 logging.basicConfig(
@@ -29,7 +34,38 @@ logger = logging.getLogger("vet")
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
-app = FastAPI(title="Voice English Trainer", version=__version__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up: building pipeline components")
+    app.state.stt = STT(settings)
+    app.state.llm = OllamaClient(settings)
+    app.state.tts = get_tts_backend(settings)
+
+    # Warm up STT + TTS in the background so the first utterance isn't slow.
+    # Failures here are non-fatal (e.g. offline on first run); they surface per turn.
+    async def _warmup():
+        try:
+            await asyncio.to_thread(app.state.stt.warmup)
+            logger.info("STT warmed up")
+        except Exception:
+            logger.exception("STT warmup failed (will retry on first use)")
+        try:
+            await asyncio.to_thread(app.state.tts.warmup, prompts.response_lang(settings.default_mode))
+            logger.info("TTS warmed up")
+        except Exception:
+            logger.exception("TTS warmup failed (will retry on first use)")
+
+    warmup_task = asyncio.create_task(_warmup())
+    try:
+        yield
+    finally:
+        warmup_task.cancel()
+        await app.state.llm.aclose()
+        logger.info("Shutdown complete")
+
+
+app = FastAPI(title="Voice English Trainer", version=__version__, lifespan=lifespan)
 
 
 async def send_json(websocket: WebSocket, obj: dict) -> None:
@@ -51,77 +87,79 @@ async def api_config() -> dict:
     }
 
 
+@app.get("/api/ollama")
+async def api_ollama() -> dict:
+    reachable = await app.state.llm.health()
+    return {"reachable": reachable, "host": settings.ollama_host, "model": settings.ollama_model}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     logger.info("WS client connected")
-    await send_json(websocket, wp.state_msg(wp.STATE_IDLE))
-    await send_json(
-        websocket, wp.mode_msg(settings.default_mode, _response_lang(settings.default_mode))
+
+    session = Session(
+        settings,
+        stt=websocket.app.state.stt,
+        llm=websocket.app.state.llm,
+        tts=websocket.app.state.tts,
     )
+    await session.on_start()
+
+    async def _send_json(obj: dict) -> None:
+        await send_json(websocket, obj)
+
+    async def _send_bytes(data: bytes) -> None:
+        await websocket.send_bytes(data)
+
+    await _send_json(wp.state_msg(wp.STATE_IDLE))
+    await _send_json(wp.mode_msg(session.mode, session.response_lang))
+
+    pending_audio_lang = settings.default_input_lang
+
     try:
         while True:
             message = await websocket.receive()
             if message["type"] == "websocket.disconnect":
                 break
+
             text = message.get("text")
             data_bytes = message.get("bytes")
+
             if text is not None:
                 try:
                     data = json.loads(text)
                 except json.JSONDecodeError:
-                    await send_json(websocket, wp.error_msg("bad json"))
+                    await _send_json(wp.error_msg("bad json"))
                     continue
-                await handle_text_message(websocket, data)
+                mtype = data.get("type")
+
+                if mtype == wp.CLIENT_PING:
+                    await _send_json({"type": wp.SERVER_PONG})
+
+                elif mtype == wp.CLIENT_SET_MODE:
+                    session.set_mode(data.get("mode", session.mode))
+                    await _send_json(wp.mode_msg(session.mode, session.response_lang))
+
+                elif mtype == wp.CLIENT_AUDIO_META:
+                    pending_audio_lang = data.get("input_lang", settings.default_input_lang)
+                    if data.get("mode"):
+                        session.set_mode(data["mode"])
+
+                elif mtype == wp.CLIENT_TEXT:
+                    if data.get("mode"):
+                        session.set_mode(data["mode"])
+                    await session.handle_text(data.get("text", ""), _send_json, _send_bytes)
+
             elif data_bytes is not None:
-                # Stage 1: audio pipeline not wired yet.
-                await send_json(
-                    websocket, wp.info_msg("Audio not available in stage 1 (text echo only).")
-                )
+                await session.handle_audio(data_bytes, pending_audio_lang, _send_json, _send_bytes)
+
     except WebSocketDisconnect:
         logger.info("WS client disconnected")
-    except Exception:  # noqa: BLE001 - keep the socket alive against single-turn errors
+    except Exception:
         logger.exception("WS handler error")
-
-
-async def handle_text_message(websocket: WebSocket, data: dict) -> None:
-    mtype = data.get("type")
-
-    if mtype == wp.CLIENT_PING:
-        await send_json(websocket, {"type": wp.SERVER_PONG})
-        return
-
-    if mtype == wp.CLIENT_SET_MODE:
-        mode = data.get("mode", settings.default_mode)
-        await send_json(websocket, wp.mode_msg(mode, _response_lang(mode)))
-        await send_json(websocket, wp.info_msg(f"mode -> {mode}"))
-        return
-
-    if mtype == wp.CLIENT_TEXT:
-        user_text = (data.get("text") or "").strip()
-        if not user_text:
-            return
-        await _echo_reply(websocket, user_text)
-        return
-
-
-async def _echo_reply(websocket: WebSocket, user_text: str) -> None:
-    """Stage-1 stand-in for the LLM: streams a canned reply word by word so the
-    character state machine (thinking -> speaking -> idle) is visible."""
-    await send_json(websocket, wp.transcript_msg(user_text, settings.default_input_lang))
-    await send_json(websocket, wp.state_msg(wp.STATE_THINKING))
-    await asyncio.sleep(0.4)
-    reply = f"Echo: {user_text}"
-    await send_json(websocket, wp.state_msg(wp.STATE_SPEAKING))
-    for word in reply.split(" "):
-        await send_json(websocket, wp.llm_text_msg(word + " "))
-        await asyncio.sleep(0.06)
-    await send_json(websocket, wp.llm_text_msg("", final=True))
-    await send_json(websocket, wp.state_msg(wp.STATE_IDLE))
-
-
-def _response_lang(mode: str) -> str:
-    return "ru" if mode == "explain" else "en"
+    finally:
+        await session.on_end()
 
 
 # Mount the static frontend LAST so /ws, /healthz and /api/* take precedence.

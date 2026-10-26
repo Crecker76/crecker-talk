@@ -30,7 +30,7 @@ app-контейнер (CPU-only, FastAPI)
       `docker-compose.yml`, `requirements.txt`, `.env.dev.example`, `.env.prod.example`, `config.py`.
 - [x] **Этап 1 — Скелет.** FastAPI + WebSocket + раздача статики. Персонаж с состояниями
       idle/listening/thinking/speaking. Текстовый эхо-цикл (без звука). Рабочий коммит.
-- [ ] **Этап 2 — Голос.** Микрофон в браузере (push-to-talk, пробел) → STT (faster-whisper)
+- [x] **Этап 2 — Голос.** Микрофон в браузере (push-to-talk, пробел) → STT (faster-whisper)
       → LLM (Ollama, стриминг) → TTS (Piper, по клаузам) → воспроизведение в браузере. Коммит.
 - [ ] **Этап 3 — Состояния и язык ввода.** Персонаж реагирует на состояния пайплайна.
       Переключатель языка ввода EN/RU по Tab + бейдж возле персонажа. Коммит.

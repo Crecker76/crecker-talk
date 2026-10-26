@@ -60,6 +60,11 @@
   function onServerMessage(data) {
     switch (data.type) {
       case "state":
+        // While TTS audio is still playing, let the playback drain decide when
+        // to go idle (so the mouth keeps moving until the sound actually stops).
+        if (data.state === "idle" && window.AudioPlayer && window.AudioPlayer.isBusy()) {
+          break;
+        }
         window.Character.setState(data.state);
         break;
       case "transcript":
@@ -104,7 +109,8 @@
       if (typeof ev.data === "string") {
         try { onServerMessage(JSON.parse(ev.data)); } catch (e) { /* ignore */ }
       } else {
-        // binary = WAV audio (added in stage 2)
+        // binary = WAV audio clause
+        window.Character.setState("speaking");
         if (window.AudioPlayer) window.AudioPlayer.enqueue(ev.data);
       }
     };
@@ -127,6 +133,68 @@
     });
   }
 
+  // ---------- input: microphone (push-to-talk, Space) ----------
+  async function startTalking() {
+    if (!state.connected) { addSysMsg("Not connected yet…"); return; }
+    if (window.Mic.isRecording()) return;
+    window.AudioPlayer.resume(); // unlock audio within the user gesture
+    window.AudioPlayer.reset();
+    try {
+      await window.Mic.start();
+    } catch (e) {
+      addSysMsg("⚠ Microphone blocked. Allow mic access (needs http://localhost).");
+      return;
+    }
+    document.body.classList.add("ptt-active");
+    window.Character.setState("listening");
+  }
+
+  function stopTalking() {
+    if (!window.Mic.isRecording()) return;
+    window.Mic.stop(); // onData -> sendAudio
+    document.body.classList.remove("ptt-active");
+  }
+
+  async function sendAudio(blob) {
+    if (!blob || blob.size < 1200) { // too short to be speech
+      window.Character.setState("idle");
+      return;
+    }
+    const buf = await blob.arrayBuffer();
+    sendJSON({ type: "audio_meta", input_lang: state.inputLang, mode: state.mode });
+    if (state.connected && state.ws.readyState === WebSocket.OPEN) {
+      state.ws.send(buf);
+    }
+  }
+
+  function wireMic() {
+    window.Mic.setOnData((blob) => sendAudio(blob));
+    window.AudioPlayer.setOnDrain(() => window.Character.setState("idle"));
+  }
+
+  // ---------- keyboard ----------
+  function typingInInput() {
+    return document.activeElement === els.textInput;
+  }
+
+  function wireKeys() {
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        if (typingInInput()) return;
+        if (e.repeat) return;
+        e.preventDefault();
+        startTalking();
+      }
+    });
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "Space") {
+        if (typingInInput()) return;
+        e.preventDefault();
+        stopTalking();
+      }
+    });
+  }
+
   // ---------- boot ----------
   document.addEventListener("DOMContentLoaded", async () => {
     cacheEls();
@@ -139,8 +207,10 @@
     } catch (e) { /* defaults are fine */ }
 
     wireTextInput();
+    wireMic();
+    wireKeys();
     connect();
-    addSysMsg("Type below to test the loop (mic comes in stage 2).");
+    addSysMsg("Hold Space to talk, or type below to test without a mic.");
   });
 
   // expose for later stages
