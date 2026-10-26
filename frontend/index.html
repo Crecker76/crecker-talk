@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice English Trainer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title">🎙️ Voice English Trainer</div>
+      <div class="controls">
+        <button id="modeBtn" class="pill" type="button" title="Switch mode">
+          mode: <span id="modeLabel">conversation</span>
+        </button>
+        <span id="connDot" class="conn" title="connection">●</span>
+      </div>
+    </header>
+
+    <section class="stage">
+      <!-- Character -->
+      <div class="character-wrap">
+        <div id="character" class="character" data-state="idle">
+          <!-- listening halo + the creature; animated purely via CSS by data-state -->
+          <svg viewBox="0 0 240 240" width="240" height="240" aria-hidden="true">
+            <circle class="halo" cx="120" cy="120" r="96" />
+            <!-- ears react when listening -->
+            <g class="ears">
+              <path class="ear ear-l" d="M70 60 Q58 20 92 44 Z" />
+              <path class="ear ear-r" d="M170 60 Q182 20 148 44 Z" />
+            </g>
+            <!-- head -->
+            <ellipse class="head" cx="120" cy="128" rx="78" ry="72" />
+            <!-- cheeks -->
+            <circle class="cheek" cx="82" cy="150" r="10" />
+            <circle class="cheek" cx="158" cy="150" r="10" />
+            <!-- eyes -->
+            <g class="eyes">
+              <g class="eye eye-l">
+                <ellipse class="eye-white" cx="96" cy="118" rx="16" ry="18" />
+                <circle class="pupil" cx="96" cy="120" r="7" />
+              </g>
+              <g class="eye eye-r">
+                <ellipse class="eye-white" cx="144" cy="118" rx="16" ry="18" />
+                <circle class="pupil" cx="144" cy="120" r="7" />
+              </g>
+            </g>
+            <!-- mouth (animates when speaking) -->
+            <ellipse class="mouth" cx="120" cy="162" rx="20" ry="7" />
+            <!-- thinking dots -->
+            <g class="dots">
+              <circle class="dot dot1" cx="100" cy="46" r="6" />
+              <circle class="dot dot2" cx="120" cy="46" r="6" />
+              <circle class="dot dot3" cx="140" cy="46" r="6" />
+            </g>
+          </svg>
+
+          <!-- input-language badge, lives next to the character -->
+          <div id="langBadge" class="lang-badge" title="Input language (Tab)">EN</div>
+        </div>
+        <div id="stateLabel" class="state-label">idle</div>
+      </div>
+
+      <!-- Conversation log -->
+      <div id="log" class="log" aria-live="polite"></div>
+    </section>
+
+    <footer class="bottombar">
+      <div class="hint">
+        <kbd>Space</kbd> hold to talk &nbsp;·&nbsp;
+        <kbd>Tab</kbd> switch input language &nbsp;·&nbsp;
+        click <b>mode</b> to switch teacher/partner
+      </div>
+      <!-- Debug text input: drives the pipeline without a mic (great for logic testing) -->
+      <form id="textForm" class="text-input">
+        <input id="textInput" type="text" autocomplete="off"
+               placeholder="type to test without a mic…" />
+        <button type="submit" class="pill">send</button>
+      </form>
+    </footer>
+  </main>
+
+  <script src="character.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

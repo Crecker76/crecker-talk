@@ -26,9 +26,9 @@ app-контейнер (CPU-only, FastAPI)
 
 ## Этапы
 
-- [ ] **Этап 0 — Инфраструктура.** git, дерево, `.gitignore`, `Dockerfile`,
+- [x] **Этап 0 — Инфраструктура.** git, дерево, `.gitignore`, `Dockerfile`,
       `docker-compose.yml`, `requirements.txt`, `.env.dev.example`, `.env.prod.example`, `config.py`.
-- [ ] **Этап 1 — Скелет.** FastAPI + WebSocket + раздача статики. Персонаж с состояниями
+- [x] **Этап 1 — Скелет.** FastAPI + WebSocket + раздача статики. Персонаж с состояниями
       idle/listening/thinking/speaking. Текстовый эхо-цикл (без звука). Рабочий коммит.
 - [ ] **Этап 2 — Голос.** Микрофон в браузере (push-to-talk, пробел) → STT (faster-whisper)
       → LLM (Ollama, стриминг) → TTS (Piper, по клаузам) → воспроизведение в браузере. Коммит.
