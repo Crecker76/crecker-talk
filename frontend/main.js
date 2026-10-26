@@ -172,6 +172,23 @@
     window.AudioPlayer.setOnDrain(() => window.Character.setState("idle"));
   }
 
+  // ---------- input language (EN/RU) ----------
+  // This is the Whisper language only; it is independent of the reply language,
+  // which is decided by the mode's system prompt on the server.
+  function setInputLang(lang) {
+    state.inputLang = lang === "ru" ? "ru" : "en";
+    if (els.langBadge) {
+      els.langBadge.textContent = state.inputLang.toUpperCase();
+      els.langBadge.classList.toggle("ru", state.inputLang === "ru");
+    }
+    try { localStorage.setItem("vet_input_lang", state.inputLang); } catch (e) { /* ignore */ }
+  }
+
+  function toggleInputLang() {
+    setInputLang(state.inputLang === "en" ? "ru" : "en");
+    addSysMsg("Input language → " + state.inputLang.toUpperCase());
+  }
+
   // ---------- keyboard ----------
   function typingInInput() {
     return document.activeElement === els.textInput;
@@ -184,6 +201,10 @@
         if (e.repeat) return;
         e.preventDefault();
         startTalking();
+      } else if (e.code === "Tab") {
+        if (typingInInput()) return; // let Tab leave the text field normally
+        e.preventDefault();
+        toggleInputLang();
       }
     });
     document.addEventListener("keyup", (e) => {
@@ -201,10 +222,13 @@
     try {
       const cfg = await fetch("/api/config").then((r) => r.json());
       state.mode = cfg.default_mode || state.mode;
-      state.inputLang = cfg.default_input_lang || state.inputLang;
       if (els.modeLabel) els.modeLabel.textContent = state.mode;
-      if (els.langBadge) els.langBadge.textContent = state.inputLang.toUpperCase();
-    } catch (e) { /* defaults are fine */ }
+      let saved = null;
+      try { saved = localStorage.getItem("vet_input_lang"); } catch (e) { /* ignore */ }
+      setInputLang(saved || cfg.default_input_lang || state.inputLang);
+    } catch (e) {
+      setInputLang(state.inputLang);
+    }
 
     wireTextInput();
     wireMic();
