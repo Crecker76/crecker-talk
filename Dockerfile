@@ -23,6 +23,7 @@ RUN pip install -r requirements.txt
 
 COPY app ./app
 COPY frontend ./frontend
+COPY scripts ./scripts
 COPY syllabus.yaml ./syllabus.yaml
 
 # Volumes (mounted by compose): model weights and the SQLite DB.
