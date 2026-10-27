@@ -191,7 +191,15 @@ docker compose up --build
 - На Docker Desktop `host.docker.internal` работает из коробки; в compose уже прописан
   `extra_hosts: host-gateway` на случай Linux.
 
-**Не хватает VRAM (4 ГБ) / модель уходит в CPU / OOM.**
+**`LLM call failed` в UI / Ollama отдаёт 500 `unable to allocate ... buffer`.**
+Модель не влезла в память. На ноуте без мощной GPU Ollama грузит модель в ОЗУ: 7B
+(`dolphin-mistral`) хочет ~4 ГБ непрерывно, и под Docker + браузером их может не быть.
+Это ровно тот случай, под который сделан dev-пресет. Решения:
+- На ноуте бери лёгкую модель: `ollama pull llama3.2:3b` + `copy .env.dev.example .env` (3B, ~2 ГБ).
+- Или освободи ОЗУ (закрой вкладки/приложения) и оставь текущую модель.
+- Проверь, что модель из `.env` реально скачана: `ollama list` (имя должно совпадать с `OLLAMA_MODEL`).
+
+**Не хватает VRAM (4 ГБ, целевой ПК) / модель уходит в CPU.**
 - Понизь `OLLAMA_NUM_CTX` (например, `2048`).
 - Ограничь слои на GPU: раскомментируй `OLLAMA_NUM_GPU` в `.env` (напр. `24`).
 - Откатись на 3B: `OLLAMA_MODEL=llama3.2:3b` (как в dev).
