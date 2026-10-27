@@ -202,7 +202,7 @@
         e.preventDefault();
         startTalking();
       } else if (e.code === "Tab") {
-        if (typingInInput()) return; // let Tab leave the text field normally
+        // Always switch input language (even while typing), never move focus.
         e.preventDefault();
         toggleInputLang();
       }

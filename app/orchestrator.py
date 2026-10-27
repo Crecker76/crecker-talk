@@ -167,8 +167,9 @@ class Session:
         clause = clause.strip()
         if not clause:
             return speaking
+        lang = self._clause_lang(clause)
         try:
-            wav = await asyncio.to_thread(self.tts.synthesize, clause, self.response_lang)
+            wav = await asyncio.to_thread(self.tts.synthesize, clause, lang)
         except Exception:
             logger.exception("TTS failed for clause: %r", clause)
             return speaking
@@ -203,6 +204,17 @@ class Session:
                     "If my question is open-ended, you may use the focus topic as your example."
                 )
         return "\n".join(parts) if parts else None
+
+    def _clause_lang(self, text: str) -> str:
+        """Pick the TTS voice language by the clause's dominant script, so the
+        voice always matches the actual text (Cyrillic -> ru, Latin -> en),
+        independent of the mode. Falls back to the mode's language when the
+        clause has no letters (punctuation/numbers only)."""
+        cyr = sum(1 for ch in text if "Ѐ" <= ch <= "ӿ")
+        lat = sum(1 for ch in text if "a" <= ch.lower() <= "z")
+        if cyr == 0 and lat == 0:
+            return self.response_lang
+        return "ru" if cyr > lat else "en"
 
     def _trim_history(self) -> None:
         if len(self.history) > self.s.history_max_messages:
