@@ -6,6 +6,7 @@
   // ---------- playback: sequential queue of WAV chunks ----------
   const AudioPlayer = (function () {
     let ctx = null;
+    let analyser = null;
     let nextTime = 0;
     let pending = 0;
     let onDrain = null;
@@ -13,7 +14,27 @@
     function ensure() {
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state === "suspended") ctx.resume();
+      if (!analyser) {
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.55;
+        analyser.connect(ctx.destination); // analyser -> speakers
+      }
       return ctx;
+    }
+
+    // Current playback loudness 0..1 (RMS), used by the character for lip-sync.
+    function getLevel() {
+      if (!analyser) return 0;
+      const buf = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const d = (buf[i] - 128) / 128;
+        sum += d * d;
+      }
+      const rms = Math.sqrt(sum / buf.length);
+      return Math.min(1, rms * 3.4);
     }
 
     async function enqueue(arrayBuffer) {
@@ -29,7 +50,7 @@
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      src.connect(ctx.destination);
+      src.connect(analyser); // -> analyser -> destination (so we can read the level)
       const start = Math.max(ctx.currentTime + 0.02, nextTime);
       src.start(start);
       nextTime = start + buf.duration;
@@ -45,6 +66,7 @@
       isBusy: () => pending > 0,
       reset: () => { nextTime = 0; },
       setOnDrain: (f) => { onDrain = f; },
+      getLevel,
     };
   })();
 

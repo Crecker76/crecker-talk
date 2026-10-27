@@ -23,36 +23,64 @@
       <div class="character-wrap">
         <div id="character" class="character" data-state="idle">
           <!-- listening halo + the creature; animated purely via CSS by data-state -->
-          <svg viewBox="0 0 240 240" width="240" height="240" aria-hidden="true">
-            <circle class="halo" cx="120" cy="120" r="96" />
-            <!-- ears react when listening -->
-            <g class="ears">
-              <path class="ear ear-l" d="M70 60 Q58 20 92 44 Z" />
-              <path class="ear ear-r" d="M170 60 Q182 20 148 44 Z" />
-            </g>
-            <!-- head -->
-            <ellipse class="head" cx="120" cy="128" rx="78" ry="72" />
-            <!-- cheeks -->
-            <circle class="cheek" cx="82" cy="150" r="10" />
-            <circle class="cheek" cx="158" cy="150" r="10" />
-            <!-- eyes -->
-            <g class="eyes">
-              <g class="eye eye-l">
-                <ellipse class="eye-white" cx="96" cy="118" rx="16" ry="18" />
-                <circle class="pupil" cx="96" cy="120" r="7" />
-              </g>
-              <g class="eye eye-r">
-                <ellipse class="eye-white" cx="144" cy="118" rx="16" ry="18" />
-                <circle class="pupil" cx="144" cy="120" r="7" />
-              </g>
-            </g>
-            <!-- mouth (animates when speaking) -->
-            <ellipse class="mouth" cx="120" cy="162" rx="20" ry="7" />
-            <!-- thinking dots -->
+          <!-- Крекер: печенька с глазами, ртом, ручками и ножками. Рот двигается
+               в JS под реальный звук (лип-синк). -->
+          <svg viewBox="0 0 240 260" width="240" height="260" aria-hidden="true">
+            <circle class="halo" cx="120" cy="116" r="92" />
             <g class="dots">
-              <circle class="dot dot1" cx="100" cy="46" r="6" />
-              <circle class="dot dot2" cx="120" cy="46" r="6" />
-              <circle class="dot dot3" cx="140" cy="46" r="6" />
+              <circle class="dot dot1" cx="150" cy="42" r="6" />
+              <circle class="dot dot2" cx="172" cy="32" r="7" />
+              <circle class="dot dot3" cx="196" cy="24" r="8" />
+            </g>
+
+            <g class="toon">
+              <!-- legs -->
+              <g class="legs">
+                <path class="leg leg-l" d="M102 182 L94 226" />
+                <path class="leg leg-r" d="M138 182 L146 226" />
+                <ellipse class="foot foot-l" cx="90" cy="232" rx="13" ry="7" />
+                <ellipse class="foot foot-r" cx="150" cy="232" rx="13" ry="7" />
+              </g>
+              <!-- arms -->
+              <g class="arms">
+                <path class="arm arm-l" d="M58 150 L32 134" />
+                <path class="arm arm-r" d="M182 150 L208 134" />
+                <circle class="hand hand-l" cx="29" cy="132" r="8" />
+                <circle class="hand hand-r" cx="211" cy="132" r="8" />
+              </g>
+              <!-- cracker body -->
+              <g class="body">
+                <rect class="cracker" x="52" y="48" width="136" height="136" rx="30" />
+                <g class="holes">
+                  <circle cx="74" cy="66" r="3.4" /><circle cx="104" cy="62" r="3.4" />
+                  <circle cx="136" cy="62" r="3.4" /><circle cx="166" cy="66" r="3.4" />
+                  <circle cx="63" cy="98" r="3.4" /><circle cx="177" cy="98" r="3.4" />
+                  <circle cx="63" cy="134" r="3.4" /><circle cx="177" cy="134" r="3.4" />
+                  <circle cx="74" cy="168" r="3.4" /><circle cx="104" cy="172" r="3.4" />
+                  <circle cx="136" cy="172" r="3.4" /><circle cx="166" cy="168" r="3.4" />
+                </g>
+              </g>
+              <!-- cheeks -->
+              <circle class="cheek" cx="80" cy="140" r="9" />
+              <circle class="cheek" cx="160" cy="140" r="9" />
+              <!-- eyes -->
+              <g class="eyes">
+                <g class="eye eye-l">
+                  <ellipse class="eye-white" cx="100" cy="112" rx="15" ry="17" />
+                  <circle class="pupil" cx="100" cy="114" r="6.5" />
+                  <circle class="glint" cx="103.5" cy="109" r="2.4" />
+                </g>
+                <g class="eye eye-r">
+                  <ellipse class="eye-white" cx="140" cy="112" rx="15" ry="17" />
+                  <circle class="pupil" cx="140" cy="114" r="6.5" />
+                  <circle class="glint" cx="143.5" cy="109" r="2.4" />
+                </g>
+              </g>
+              <!-- brows -->
+              <path class="brow brow-l" d="M87 92 Q100 85 113 92" />
+              <path class="brow brow-r" d="M127 92 Q140 85 153 92" />
+              <!-- mouth (lip-sync, JS-driven) -->
+              <ellipse class="mouth" cx="120" cy="152" rx="15" ry="11" />
             </g>
           </svg>
 
