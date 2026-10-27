@@ -55,6 +55,7 @@ class Session:
         self._focus_item = None       # SyllabusItem | None
         self._focus_index: int = 0
         self._turn_count: int = 0
+        self._reply_lang: str = "en"  # mirrors the user's input language, per turn
 
     # ---- lifecycle: load prior progress at start, persist + advance at end ----
     async def on_start(self) -> None:
@@ -93,7 +94,8 @@ class Session:
     # ---- mode ----
     @property
     def response_lang(self) -> str:
-        return prompts.response_lang(self.mode)
+        # Reply language mirrors the user's input (set per turn in _run_llm).
+        return self._reply_lang
 
     def set_mode(self, mode: str) -> None:
         if prompts.is_valid_mode(mode):
@@ -130,7 +132,8 @@ class Session:
     # ---- core: stream LLM, speak clause by clause ----
     async def _run_llm(self, user_text: str, send_json: SendJson, send_bytes: SendBytes) -> None:
         self.history.append({"role": "user", "content": user_text})
-        messages = self._build_messages()
+        self._reply_lang = self._detect_lang(user_text)
+        messages = self._build_messages(self._reply_lang)
         aggregator = ClauseAggregator()
         collected: List[str] = []
         speaking = False
@@ -182,8 +185,8 @@ class Session:
         return speaking
 
     # ---- helpers ----
-    def _build_messages(self) -> List[dict]:
-        system = prompts.build_system_prompt(self.mode, self._extra_context())
+    def _build_messages(self, reply_lang: str) -> List[dict]:
+        system = prompts.build_system_prompt(self.mode, reply_lang, self._extra_context())
         messages = [{"role": "system", "content": system}]
         messages.extend(self.history[-self.s.history_max_messages:])
         return messages
@@ -205,16 +208,21 @@ class Session:
                 )
         return "\n".join(parts) if parts else None
 
-    def _clause_lang(self, text: str) -> str:
-        """Pick the TTS voice language by the clause's dominant script, so the
-        voice always matches the actual text (Cyrillic -> ru, Latin -> en),
-        independent of the mode. Falls back to the mode's language when the
-        clause has no letters (punctuation/numbers only)."""
+    @staticmethod
+    def _detect_lang(text: str, default: str = "en") -> str:
+        """Detect the dominant script of `text`: Cyrillic -> ru, Latin -> en.
+        Returns `default` when there are no letters (punctuation/numbers only)."""
         cyr = sum(1 for ch in text if "Ѐ" <= ch <= "ӿ")
         lat = sum(1 for ch in text if "a" <= ch.lower() <= "z")
         if cyr == 0 and lat == 0:
-            return self.response_lang
+            return default
         return "ru" if cyr > lat else "en"
+
+    def _clause_lang(self, text: str) -> str:
+        """Pick the TTS voice language by the clause's dominant script, so the
+        voice always matches the spoken text (falls back to the turn's reply
+        language for punctuation-only clauses)."""
+        return self._detect_lang(text, self._reply_lang)
 
     def _trim_history(self) -> None:
         if len(self.history) > self.s.history_max_messages:
