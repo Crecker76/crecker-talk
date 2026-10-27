@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     tts_voice_ru: str = "ru_RU-irina-medium"    # voice for Russian replies
     tts_speaker_id: Optional[int] = None
     piper_data_dir: str = "/app/models/piper"
+    # Kokoro backend (TTS_BACKEND=kokoro): natural English on CPU/onnxruntime.
+    # Russian falls back to Piper (TTS_VOICE_RU). See VOICES.md for voice names.
+    kokoro_voice: str = "af_heart"
+    kokoro_lang: str = "en-us"
+    kokoro_speed: float = 1.0
+    kokoro_data_dir: str = "/app/models/kokoro"
 
     # ---- App behaviour ----
     default_input_lang: str = "en"       # en | ru  (Whisper language)

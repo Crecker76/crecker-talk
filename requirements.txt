@@ -14,6 +14,9 @@ requests==2.32.3
 
 # TTS: Piper (CPU, self-contained via piper-phonemize wheels).
 piper-tts==1.2.0
+# TTS: Kokoro (optional, more natural English). CPU via onnxruntime, no torch;
+# pulls phonemizer + espeakng-loader (bundles espeak-ng). Enable with TTS_BACKEND=kokoro.
+kokoro-onnx==0.6.1
 
 # NOTE: numpy / onnxruntime / av / ctranslate2 are resolved transitively
 # so the versions stay mutually compatible across faster-whisper and piper.
