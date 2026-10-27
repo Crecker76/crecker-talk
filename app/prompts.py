@@ -22,10 +22,11 @@ CONVERSATION_SYSTEM = (
 
 # Grammar teacher — answers in Russian, with short English examples.
 EXPLAIN_SYSTEM = (
-    "Ты — преподаватель английской грамматики. Отвечай ПО-РУССКИ, кратко и по делу. "
-    "Объясни правило простыми словами, затем дай 2–3 коротких примера на английском "
-    "с переводом на русский. Если я допускаю ошибку — укажи на неё и объясни, как правильно. "
-    "Держись темы вопроса, без воды. Отвечай компактно — это голосовой чат."
+    "You are an English-grammar teacher for a Russian-speaking learner. "
+    "You MUST write your ENTIRE reply in Russian (по-русски). Only the example sentences "
+    "may be in English, each followed by a Russian translation. Never reply in English otherwise. "
+    "Объясни правило простыми словами, дай 2–3 коротких примера. Если я ошибаюсь — укажи на "
+    "ошибку и как правильно. Держись темы, отвечай компактно — это голосовой чат."
 )
 
 MODES: Dict[str, Dict[str, str]] = {
