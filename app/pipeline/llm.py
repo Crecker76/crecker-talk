@@ -32,22 +32,26 @@ class OllamaClient:
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    def _options(self) -> dict:
+    def _options(self, num_predict: Optional[int] = None) -> dict:
         opts = {
             "temperature": self.s.ollama_temperature,
             "num_ctx": self.s.ollama_num_ctx,
         }
+        if num_predict and num_predict > 0:
+            opts["num_predict"] = num_predict
         if self.s.ollama_num_gpu is not None:
             opts["num_gpu"] = self.s.ollama_num_gpu
         return opts
 
-    async def chat_stream(self, messages: List[dict]) -> AsyncIterator[str]:
+    async def chat_stream(
+        self, messages: List[dict], num_predict: Optional[int] = None
+    ) -> AsyncIterator[str]:
         payload = {
             "model": self.s.ollama_model,
             "messages": messages,
             "stream": True,
             "keep_alive": self.s.ollama_keep_alive,
-            "options": self._options(),
+            "options": self._options(num_predict),
         }
         async with self._client.stream("POST", "/api/chat", json=payload) as resp:
             resp.raise_for_status()
@@ -66,10 +70,10 @@ class OllamaClient:
                 if data.get("done"):
                     break
 
-    async def complete(self, messages: List[dict]) -> str:
+    async def complete(self, messages: List[dict], num_predict: Optional[int] = None) -> str:
         """Non-streaming helper (used for the end-of-session summary)."""
         parts: List[str] = []
-        async for chunk in self.chat_stream(messages):
+        async for chunk in self.chat_stream(messages, num_predict=num_predict):
             parts.append(chunk)
         return "".join(parts).strip()
 

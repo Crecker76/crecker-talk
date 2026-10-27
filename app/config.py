@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # None => let Ollama auto-detect GPU layers. Set an int to cap for low VRAM.
     ollama_num_gpu: Optional[int] = None
     ollama_request_timeout: float = 180.0
+    # Hard cap on reply length (num_predict). Conversation stays laconic; explain
+    # gets more room for the rule + examples. Lower these for even shorter replies.
+    reply_max_tokens_conversation: int = 80
+    reply_max_tokens_explain: int = 320
 
     # ---- STT: faster-whisper (always CPU) ----
     whisper_model: str = "base"          # tiny | base | small | medium | ...
@@ -69,6 +73,10 @@ class Settings(BaseSettings):
     def tts_voice_for(self, lang: str) -> str:
         """Pick the Piper voice that matches the response language."""
         return self.tts_voice_ru if lang.lower().startswith("ru") else self.tts_voice
+
+    def max_tokens_for(self, mode: str) -> int:
+        """Reply length cap (num_predict) for the given mode."""
+        return self.reply_max_tokens_explain if mode == "explain" else self.reply_max_tokens_conversation
 
 
 @lru_cache

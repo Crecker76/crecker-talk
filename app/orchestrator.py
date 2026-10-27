@@ -138,8 +138,9 @@ class Session:
         collected: List[str] = []
         speaking = False
 
+        num_predict = self.s.max_tokens_for(self.mode)
         try:
-            async for delta in self.llm.chat_stream(messages):
+            async for delta in self.llm.chat_stream(messages, num_predict=num_predict):
                 collected.append(delta)
                 await send_json(wp.llm_text_msg(delta))
                 for clause in aggregator.push(delta):
@@ -192,21 +193,24 @@ class Session:
         return messages
 
     def _extra_context(self) -> Optional[str]:
-        parts: List[str] = []
+        if self.mode == "explain":
+            parts: List[str] = []
+            if self._focus_item is not None:
+                parts.append(f"Current focus topic: {self._focus_item.focus_line()}")
+            if self._last_summary:
+                parts.append(f"Student notes: {self._last_summary}")
+            if self._focus_item is not None:
+                parts.append("If my question is open-ended, you may use the focus topic as your example.")
+            return "\n".join(parts) if parts else None
+        # Conversation: keep it natural. Only a soft background hint, never a lecture,
+        # and never dump the focus tag or my past mistakes into the reply.
         if self._focus_item is not None:
-            parts.append(f"[Learning focus] {self._focus_item.focus_line()}")
-        if self._last_summary:
-            parts.append(f"[Student progress so far] {self._last_summary}")
-        if self._focus_item is not None:
-            if self.mode == "conversation":
-                parts.append(
-                    "Gently steer the chat toward the focus topic and briefly correct related mistakes."
-                )
-            else:
-                parts.append(
-                    "If my question is open-ended, you may use the focus topic as your example."
-                )
-        return "\n".join(parts) if parts else None
+            return (
+                "(Private note — do NOT mention or lecture about this: "
+                f"I'm gradually practising '{self._focus_item.topic}'. Weave it in only if it fits "
+                "naturally; keep replies short and conversational, and never list my past mistakes.)"
+            )
+        return None
 
     @staticmethod
     def _detect_lang(text: str, default: str = "en") -> str:
@@ -257,7 +261,7 @@ class Session:
             {"role": "user", "content": convo + "\n\n/no_think"},
         ]
         try:
-            note = await self.llm.complete(messages)
+            note = await self.llm.complete(messages, num_predict=90)
         except Exception:
             logger.exception("summary LLM call failed")
             return ""
