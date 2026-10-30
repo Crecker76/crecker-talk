@@ -4,8 +4,8 @@
 services:
   app:
     build: .
-    image: voice-english-trainer:latest
-    container_name: voice-english-trainer
+    image: crecker-talk:latest
+    container_name: crecker-talk
     ports:
       - "8000:8000"
     # Copy .env.dev.example or .env.prod.example to .env before `up`.

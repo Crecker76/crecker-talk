@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="Крекер — маскот CreckerTalk">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2335"/><stop offset="1" stop-color="#0f1420"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" rx="28" fill="url(#bg)"/>
+  <g transform="translate(30,18)" stroke-linecap="round">
+    <!-- legs -->
+    <path d="M102 182 L94 226" fill="none" stroke="#c48f3e" stroke-width="7"/>
+    <path d="M138 182 L146 226" fill="none" stroke="#c48f3e" stroke-width="7"/>
+    <ellipse cx="90" cy="232" rx="13" ry="7" fill="#e8bd6b" stroke="#c48f3e" stroke-width="3"/>
+    <ellipse cx="150" cy="232" rx="13" ry="7" fill="#e8bd6b" stroke="#c48f3e" stroke-width="3"/>
+    <!-- arms (right one waving) -->
+    <path d="M58 150 L32 134" fill="none" stroke="#c48f3e" stroke-width="7"/>
+    <path d="M182 150 L210 116" fill="none" stroke="#c48f3e" stroke-width="7"/>
+    <circle cx="29" cy="132" r="8" fill="#e8bd6b" stroke="#c48f3e" stroke-width="3"/>
+    <circle cx="213" cy="112" r="8" fill="#e8bd6b" stroke="#c48f3e" stroke-width="3"/>
+    <!-- cracker body -->
+    <rect x="52" y="48" width="136" height="136" rx="30" fill="#e8bd6b" stroke="#c48f3e" stroke-width="4" stroke-dasharray="2 7"/>
+    <!-- docking holes -->
+    <g fill="#bf8a3c">
+      <circle cx="74" cy="66" r="3.4"/><circle cx="104" cy="62" r="3.4"/><circle cx="136" cy="62" r="3.4"/><circle cx="166" cy="66" r="3.4"/>
+      <circle cx="63" cy="98" r="3.4"/><circle cx="177" cy="98" r="3.4"/>
+      <circle cx="63" cy="134" r="3.4"/><circle cx="177" cy="134" r="3.4"/>
+      <circle cx="74" cy="168" r="3.4"/><circle cx="104" cy="172" r="3.4"/><circle cx="136" cy="172" r="3.4"/><circle cx="166" cy="168" r="3.4"/>
+    </g>
+    <!-- cheeks -->
+    <circle cx="80" cy="140" r="9" fill="#f2a7a0" opacity="0.55"/>
+    <circle cx="160" cy="140" r="9" fill="#f2a7a0" opacity="0.55"/>
+    <!-- eyes -->
+    <ellipse cx="100" cy="112" rx="15" ry="17" fill="#fff"/><circle cx="100" cy="114" r="6.5" fill="#3a2a20"/><circle cx="103.5" cy="109" r="2.4" fill="#fff"/>
+    <ellipse cx="140" cy="112" rx="15" ry="17" fill="#fff"/><circle cx="140" cy="114" r="6.5" fill="#3a2a20"/><circle cx="143.5" cy="109" r="2.4" fill="#fff"/>
+    <!-- brows -->
+    <path d="M87 92 Q100 85 113 92" fill="none" stroke="#c48f3e" stroke-width="4"/>
+    <path d="M127 92 Q140 85 153 92" fill="none" stroke="#c48f3e" stroke-width="4"/>
+    <!-- happy smile -->
+    <path d="M104 148 Q120 167 136 148" fill="none" stroke="#7a3326" stroke-width="5"/>
+  </g>
+</svg>
