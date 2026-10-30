@@ -1,164 +1,155 @@
 <h1 align="center">🍪 CreckerTalk</h1>
 
 <p align="center">
-  <b>Локальный голосовой тренажёр английского.</b><br/>
-  Говоришь в микрофон с персонажем-печенькой — он отвечает голосом, поправляет ошибки и объясняет правила.
+  <b>A local voice trainer for English.</b><br/>
+  Talk to a cracker character — it replies by voice, fixes your mistakes and explains grammar. Fully offline.
 </p>
 
 <p align="center">
-  <img src="docs/cracker.svg" width="220" alt="Крекер — маскот проекта" />
+  <b>English</b> · <a href="README.ru.md">Русский</a>
+</p>
+
+<p align="center">
+  <img src="docs/cracker-animated.svg" width="200" alt="Крекер — the cracker mascot" />
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-in%20development-orange" alt="in development" />
   <img src="https://img.shields.io/badge/run-Docker-2496ED?logo=docker&logoColor=white" alt="docker" />
   <img src="https://img.shields.io/badge/LLM-Ollama-black" alt="ollama" />
-  <img src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white" alt="windows" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555" alt="platform" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT" />
 </p>
 
-> ⚠️ **Проект в активной разработке.** Основной сценарий работает, но UI, функции и настройки
-> ещё меняются. Идеи и фидбек приветствуются.
+> ⚠️ **Work in progress.** The core loop works, but the UI, features and settings still change. Feedback is welcome.
+
+<p align="center">
+  <img src="docs/screenshot.jpg" width="640" alt="CreckerTalk screenshot" />
+</p>
 
 ---
 
-## 🎯 Что это
+## 🎯 What is it
 
-Голосовой собеседник для практики английского, который работает **полностью локально** на твоём ПК:
+A voice conversation partner for practicing English that runs **entirely on your machine**:
 
-- 🎙️ **Говоришь голосом** — микрофон в браузере, распознавание речи на лету.
-- 🗣️ **Отвечает голосом** — живой персонаж-печенька **Крекер** с лип-синком (рот двигается под звук).
-- ✍️ **Поправляет ошибки** прямо по ходу разговора.
-- 📚 **Объясняет правила** по запросу (режим преподавателя).
-- 🌍 **Зеркалит язык**: пишешь/говоришь по-русски — отвечает по-русски; по-английски — по-английски.
-- 🔒 **Приватно**: без облаков. LLM — в Ollama, речь — на CPU.
+- 🎙️ **Talk by voice** — browser microphone, live speech recognition.
+- 🗣️ **Replies by voice** — an animated cracker, **Крекер**, with real lip-sync (the mouth moves with the audio).
+- ✍️ **Fixes your mistakes** as you chat.
+- 📚 **Explains grammar** on request (teacher mode).
+- 🌍 **Mirrors your language** — write/speak Russian → it answers in Russian; English → English.
+- 🔒 **Private** — no cloud. LLM via Ollama, speech on CPU.
 
-## 🧩 Как это работает
+## 🧩 How it works
 
 ```
-Браузер (микрофон, Web Audio, персонаж Крекер)
-   │  WebSocket (аудио ⇄ аудио)
+Browser (mic, Web Audio, Крекер)
+   │  WebSocket (audio ⇄ audio)
    ▼
-app-контейнер (CPU):  VAD → STT (faster-whisper) → оркестратор → Ollama → TTS → браузер
-                                              ▲
-                                      Ollama (нативно на хосте, GPU)
+app container (CPU):  VAD → STT (faster-whisper) → orchestrator → Ollama → TTS → browser
+                                          ▲
+                                  Ollama (native on host, uses the GPU)
 ```
 
-- **LLM** — Ollama, установлена нативно на Windows (сама берёт видеокарту).
-- **STT** — faster-whisper (CPU). **TTS** — Kokoro для английского / Piper для русского (CPU).
-- Всё параметризовано в `.env`. Перенос на другой ПК = «склонировал → отредактировал `.env` → `docker compose up`».
+- **LLM** — Ollama, installed natively on the host (grabs your GPU).
+- **STT** — faster-whisper (CPU). **TTS** — Kokoro for English / Piper for Russian (CPU).
+- Everything lives in `.env`. Moving to another PC = clone → edit `.env` → `docker compose up`.
 
-## 🍪 Персонаж
+## 🍪 The character
 
-Знакомься — **Крекер**: печенька с глазами, ручками и ножками. Реагирует на происходящее:
+Meet **Крекер** — a cracker with eyes, arms and legs. It reacts to what's happening:
 
-| Состояние | Что делает |
+| State | What it does |
 |---|---|
-| `idle` | стоит, моргает, лёгкий покач |
-| `listening` | поднимает ручки, слушает (во время записи) |
-| `thinking` | думает — точки над головой, взгляд вверх |
-| `speaking` | рот двигается **под реальный голос** (лип-синк) |
+| `idle` | stands, blinks, gentle bob |
+| `listening` | raises its arms (while you record) |
+| `thinking` | thinks — dots above its head, looks up |
+| `speaking` | mouth moves **with the real voice** (lip-sync) |
 
-## 🚀 Быстрый старт (Windows)
+## 🚀 Quick start
 
-**Один раз** поставь: **[Docker Desktop](https://www.docker.com/products/docker-desktop/) (WSL2)** и **[Ollama для Windows](https://ollama.com/download)**.
+**One-time:** install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** and **[Ollama](https://ollama.com/download)**.
 
-Дальше — **одной строкой**:
-
+**Windows:**
 ```powershell
 git clone https://github.com/Crecker76/crecker-talk.git; cd crecker-talk; .\start.ps1
 ```
 
-`start.ps1` сам скопирует `.env`, скачает модель (`ollama pull`), соберёт и поднимет контейнер и откроет браузер.
+**macOS / Linux:**
+```bash
+git clone https://github.com/Crecker76/crecker-talk.git && cd crecker-talk && ./start.sh
+```
+
+The script copies `.env`, pulls the model (`ollama pull`), builds & starts the container, and opens the app at **http://localhost:8000** — use `localhost`, the mic needs a secure context.
+
+> **Linux:** run Ollama so the container can reach it: `OLLAMA_HOST=0.0.0.0 ollama serve`.
 
 <details>
-<summary>…или вручную, по шагам</summary>
+<summary>…or manually</summary>
 
 ```bash
-ollama pull dolphin3:8b                 # 1. модель
-git clone https://github.com/Crecker76/crecker-talk.git && cd crecker-talk
-copy .env.prod.example .env             # 2. настройки (на слабой машине — .env.dev.example)
-docker compose up -d --build            # 3. запуск
+ollama pull dolphin3:8b
+cp .env.prod.example .env            # copy .env.prod.example .env  on Windows
+docker compose up -d --build
 ```
 </details>
 
-Открой **http://localhost:8000** — именно `localhost`, иначе браузер не даст доступ к микрофону.
+## 🎮 Controls
 
-> Почему не «совсем одна команда»: Docker Desktop и Ollama — внешние программы, их ставят один раз руками.
-> Всё остальное берёт на себя `start.ps1`.
-
-## 🎮 Управление
-
-| Действие | Что делает |
+| Action | What it does |
 |---|---|
-| Зажать **Space** | говорить (push-to-talk: зажал — говоришь, отпустил — отправил) |
-| **Tab** | переключить язык ввода EN ⇄ RU |
-| Кнопка **mode** | роль: собеседник ⇄ преподаватель грамматики |
-| Поле ввода + **Enter** | протестировать без микрофона |
+| Hold **Space** | talk (push-to-talk) |
+| **Tab** | switch input language EN ⇄ RU |
+| **mode** button | role: chat partner ⇄ grammar teacher |
+| text field + **Enter** | test without a microphone |
 
-## 🧠 Выбор модели (подробно)
+## 🧠 Choosing a model
 
-Качество и скорость ответов целиком зависят от LLM. Модель задаётся в `.env`:
+Reply quality depends on the LLM (`OLLAMA_MODEL` in `.env`).
 
-```env
-OLLAMA_MODEL=dolphin3:8b
-```
+**Switch model:** `ollama pull <model>` → edit `OLLAMA_MODEL` in `.env` → `docker compose up -d --force-recreate`.
 
-**Сменить модель** — три шага:
+**Memory footprint (Q4)** ≈ `params × 0.6 GB` + context:
 
-```bash
-ollama pull <модель>                   # скачать
-# поправить OLLAMA_MODEL в .env
-docker compose up -d --force-recreate  # перезапустить контейнер
-```
-
-Проверить, что модель видна приложению: `ollama list` и `http://localhost:8000/api/ollama`.
-
-### Сколько «весит» модель
-На 4-битном кванте (Q4) в память нужно примерно **(число параметров) × ~0.6 ГБ** плюс контекст:
-
-| Модель | ~память (Q4) |
+| Model | ~memory (Q4) |
 |---|---|
-| 3B | ~2 ГБ |
-| 7B | ~4.5 ГБ |
-| 8B | ~5 ГБ |
-| 14B | ~9 ГБ |
-| 32B | ~20 ГБ |
+| 3B | ~2 GB |
+| 7B | ~4.5 GB |
+| 8B | ~5 GB |
+| 14B | ~9 GB |
+| 32B | ~20 GB |
 
-Контекст (`OLLAMA_NUM_CTX`) тоже ест память: 2048 — экономно, 8192 — заметно больше.
-Посмотреть, как легла модель (GPU/CPU): `ollama ps` — колонка `PROCESSOR` (`100% GPU` = всё на видеокарте, `… / CPU` = часть ушла в оперативку → медленнее).
+Check how it loaded (GPU vs CPU): `ollama ps` (`100% GPU` = fully on the card).
 
-### Что брать под своё железо
+**By hardware:**
 
-| Железо | Рекомендация | Комментарий |
+| Hardware | Recommended | Notes |
 |---|---|---|
-| **1050 Ti · 4 ГБ VRAM** (целевой ПК) | `dolphin3:8b` | 8B влезает с частичной выгрузкой на CPU; потолок для 4 ГБ — 7–8B |
-| 4 ГБ, нужна скорость | `llama3.2:3b`, `qwen2.5:3b` | 3B целиком на GPU — быстро |
-| 6–8 ГБ VRAM | `dolphin3:8b`, `qwen2.5:7b` | 8B полностью на GPU |
-| 12 ГБ+ VRAM | `qwen2.5:14b`, `mistral-nemo` | заметно умнее |
-| 16 ГБ+ VRAM | `qwen2.5:32b` (Q4) | топ локального качества |
-| **CPU-only** (ноут) | `llama3.2:3b` | 7–8B тоже пойдут, но медленнее |
+| **GTX 1050 Ti · 4 GB VRAM** | `dolphin3:8b` | 8B fits with partial CPU offload; the 4 GB ceiling is ~7–8B |
+| 4 GB, want speed | `llama3.2:3b`, `qwen2.5:3b` | 3B fully on the GPU |
+| 6–8 GB VRAM | `dolphin3:8b`, `qwen2.5:7b` | 8B fully on the GPU |
+| 12 GB+ VRAM | `qwen2.5:14b`, `mistral-nemo` | noticeably smarter |
+| 16 GB+ VRAM | `qwen2.5:32b` (Q4) | best local quality |
+| CPU-only | `llama3.2:3b` | 7–8B work too, just slower |
 
-### Какие модели хорошие (2025–26)
-- **Без цензуры** (нужно разговорному режиму): `dolphin3:8b` ⭐, `dolphin-mixtral`, `dolphin-llama3`.
-- **Умные «обычные»** (тон держат через промпт): `qwen2.5:7b/14b/32b`, `llama3.1:8b`, `mistral-nemo` (12B), `gemma2:9b`.
-- ⚠️ **«Думающие»** (`qwen3`, `deepseek-r1`) выдают размышления `<think>…</think>` — для голоса не очень (в озвучку полезут рассуждения). Нужны — скажи, добавлю их вырезание на лету.
-
-### Квантование (качество vs размер)
-Ollama по умолчанию берёт **Q4_K_M** — лучший баланс. Есть лишняя память и хочется чуть качественнее — `q5_K_M` / `q6_K`; нужно полегче — `q3_K_M` (хуже). Пример: `ollama pull qwen2.5:7b-instruct-q5_K_M`.
+**Good picks:** uncensored — `dolphin3:8b` ⭐, `dolphin-mixtral`; strong instruct — `qwen2.5`, `llama3.1:8b`, `mistral-nemo` (12B), `gemma2:9b`. Avoid "thinking" models (`qwen3`, `deepseek-r1`) for voice — they emit `<think>…</think>`.
 
 ## 🩹 Troubleshooting
 
-- **`LLM call failed`** — модель из `.env` не скачана (`ollama list`) или не влезла в память. Возьми модель поменьше или освободи RAM/VRAM.
-- **Микрофон не работает** — открывай `http://localhost:8000` (не `0.0.0.0` и не по IP) — нужен secure context.
-- **Нехватка VRAM** — понизь модель до 3B или уменьши `OLLAMA_NUM_CTX`.
-- Подробные комментарии — в `.env.dev.example` / `.env.prod.example`.
+- **`LLM call failed`** — the model in `.env` isn't pulled (`ollama list`) or doesn't fit in memory. Use a smaller model or free RAM/VRAM.
+- **Mic doesn't work** — open `http://localhost:8000` (not `0.0.0.0` or an IP) — a secure context is required.
+- **Out of VRAM** — switch to a 3B model or lower `OLLAMA_NUM_CTX`.
+- More details in the comments of `.env.dev.example` / `.env.prod.example`.
 
-## 🛠️ Статус и планы
+## 🛠️ Status & roadmap
 
-Проект **в разработке**. Уже есть: сквозной голосовой цикл, лип-синк, два режима, зеркалирование языка,
-программа обучения (`syllabus.yaml`) и прогресс в SQLite. В планах: более богатая анимация персонажа,
-улучшение русского TTS, настройки прямо в интерфейсе.
+**Work in progress.** Done: end-to-end voice loop, lip-sync, two modes, language mirroring, a learning
+syllabus and SQLite progress. Planned: richer character animation, better Russian TTS, in-UI settings.
+
+## 📄 License
+
+[MIT](LICENSE) © Crecker76
 
 ---
 
-<p align="center"><i>Сделано для себя, с печенькой. 🍪</i></p>
+<p align="center"><i>Made for fun, with a cookie. 🍪</i></p>
