@@ -60,24 +60,31 @@ app-контейнер (CPU):  VAD → STT (faster-whisper) → оркестра
 
 ## 🚀 Быстрый старт (Windows)
 
-Нужно: **Docker Desktop (WSL2)** и **Ollama для Windows**.
+**Один раз** поставь: **[Docker Desktop](https://www.docker.com/products/docker-desktop/) (WSL2)** и **[Ollama для Windows](https://ollama.com/download)**.
 
-```bash
-# 1. Модель (умная, без цензуры; на 1050 Ti идёт на GPU)
-ollama pull dolphin3:8b
+Дальше — **одной строкой**:
 
-# 2. Репозиторий
-git clone https://github.com/Crecker76/crecker-talk.git
-cd crecker-talk
-
-# 3. Настройки (на слабой машине бери .env.dev.example)
-copy .env.prod.example .env
-
-# 4. Запуск
-docker compose up -d --build
+```powershell
+git clone https://github.com/Crecker76/crecker-talk.git; cd crecker-talk; .\start.ps1
 ```
 
+`start.ps1` сам скопирует `.env`, скачает модель (`ollama pull`), соберёт и поднимет контейнер и откроет браузер.
+
+<details>
+<summary>…или вручную, по шагам</summary>
+
+```bash
+ollama pull dolphin3:8b                 # 1. модель
+git clone https://github.com/Crecker76/crecker-talk.git && cd crecker-talk
+copy .env.prod.example .env             # 2. настройки (на слабой машине — .env.dev.example)
+docker compose up -d --build            # 3. запуск
+```
+</details>
+
 Открой **http://localhost:8000** — именно `localhost`, иначе браузер не даст доступ к микрофону.
+
+> Почему не «совсем одна команда»: Docker Desktop и Ollama — внешние программы, их ставят один раз руками.
+> Всё остальное берёт на себя `start.ps1`.
 
 ## 🎮 Управление
 
@@ -88,13 +95,56 @@ docker compose up -d --build
 | Кнопка **mode** | роль: собеседник ⇄ преподаватель грамматики |
 | Поле ввода + **Enter** | протестировать без микрофона |
 
-## 🧠 Выбор модели
+## 🧠 Выбор модели (подробно)
 
-Качество ответов зависит от LLM (`OLLAMA_MODEL` в `.env`):
+Качество и скорость ответов целиком зависят от LLM. Модель задаётся в `.env`:
 
-- **`dolphin3:8b`** — умная, без цензуры, рекомендуется. На 1050 Ti (4 ГБ) — с частичной выгрузкой слоёв на CPU.
-- **`llama3.2:3b` / `qwen2.5:3b`** — лёгкие, целиком помещаются на слабый GPU/CPU.
-- Потолок для 4 ГБ VRAM — **7–8B в Q4**; больше уйдёт на CPU и станет медленно.
+```env
+OLLAMA_MODEL=dolphin3:8b
+```
+
+**Сменить модель** — три шага:
+
+```bash
+ollama pull <модель>                   # скачать
+# поправить OLLAMA_MODEL в .env
+docker compose up -d --force-recreate  # перезапустить контейнер
+```
+
+Проверить, что модель видна приложению: `ollama list` и `http://localhost:8000/api/ollama`.
+
+### Сколько «весит» модель
+На 4-битном кванте (Q4) в память нужно примерно **(число параметров) × ~0.6 ГБ** плюс контекст:
+
+| Модель | ~память (Q4) |
+|---|---|
+| 3B | ~2 ГБ |
+| 7B | ~4.5 ГБ |
+| 8B | ~5 ГБ |
+| 14B | ~9 ГБ |
+| 32B | ~20 ГБ |
+
+Контекст (`OLLAMA_NUM_CTX`) тоже ест память: 2048 — экономно, 8192 — заметно больше.
+Посмотреть, как легла модель (GPU/CPU): `ollama ps` — колонка `PROCESSOR` (`100% GPU` = всё на видеокарте, `… / CPU` = часть ушла в оперативку → медленнее).
+
+### Что брать под своё железо
+
+| Железо | Рекомендация | Комментарий |
+|---|---|---|
+| **1050 Ti · 4 ГБ VRAM** (целевой ПК) | `dolphin3:8b` | 8B влезает с частичной выгрузкой на CPU; потолок для 4 ГБ — 7–8B |
+| 4 ГБ, нужна скорость | `llama3.2:3b`, `qwen2.5:3b` | 3B целиком на GPU — быстро |
+| 6–8 ГБ VRAM | `dolphin3:8b`, `qwen2.5:7b` | 8B полностью на GPU |
+| 12 ГБ+ VRAM | `qwen2.5:14b`, `mistral-nemo` | заметно умнее |
+| 16 ГБ+ VRAM | `qwen2.5:32b` (Q4) | топ локального качества |
+| **CPU-only** (ноут) | `llama3.2:3b` | 7–8B тоже пойдут, но медленнее |
+
+### Какие модели хорошие (2025–26)
+- **Без цензуры** (нужно разговорному режиму): `dolphin3:8b` ⭐, `dolphin-mixtral`, `dolphin-llama3`.
+- **Умные «обычные»** (тон держат через промпт): `qwen2.5:7b/14b/32b`, `llama3.1:8b`, `mistral-nemo` (12B), `gemma2:9b`.
+- ⚠️ **«Думающие»** (`qwen3`, `deepseek-r1`) выдают размышления `<think>…</think>` — для голоса не очень (в озвучку полезут рассуждения). Нужны — скажи, добавлю их вырезание на лету.
+
+### Квантование (качество vs размер)
+Ollama по умолчанию берёт **Q4_K_M** — лучший баланс. Есть лишняя память и хочется чуть качественнее — `q5_K_M` / `q6_K`; нужно полегче — `q3_K_M` (хуже). Пример: `ollama pull qwen2.5:7b-instruct-q5_K_M`.
 
 ## 🩹 Troubleshooting
 
